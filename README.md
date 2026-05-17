@@ -72,6 +72,7 @@ What to buy and how to plug it in.
 |------|-------|-------------------|
 | `sysmoOCTSIM-deep-dive.md` | 583 | **THE hardware decision.** Full specs, PCSC scaling, pricing, 13-board build plan. Verdict: use this, not consumer readers. |
 | `consumer-ccid-readers-deep-dive.md` | 400+ | Why 100 consumer readers fail: XHCI 96-endpoint limit, unstable naming, 4x PCIe cards needed. |
+| `test-epdg-reachability.py` | 100 | **Run this first.** Python script to test if Indian carrier ePDGs respond to IKEv2 from your IP. If TIMEOUT = you need Indian IP. |
 | `sim_bank_hardware_cost_analysis.md` | 389 | sysmoOCTSIM $330-440, Ejointech SIMPOOL-512 $800-2500. |
 | `rcs-phone-farm-feasibility-report.md` | 457 | Android phone farm: $30-50/phone, 85-90% RCS uptime. |
 | `multisim-opensource-tools.md` | 786 | smsgate, Beeper, TextBee audit. No existing tool supports RCS. |
@@ -83,6 +84,7 @@ India-specific: the primary target market.
 
 | File | Lines | What You'll Learn |
 |------|-------|-------------------|
+| `indian-mobile-proxy-epdg-bypass.md` | 140 | **Indian mobile proxy for ePDG bypass.** IPMunk $27/mo real Jio IP, Coronium.io, SOAX UDP. 3-layer fallback: VPS → mobile proxy → DIY. RFC 8229 (IKE over TCP) via libreswan. |
 | `india-epdg-rcs-operational-guide.md` | 194 | Jio/Airtel ePDG addresses, ₹1,499/yr Jio plan, 100-SIM cost ~₹4.7L Year 1. |
 | `india-telecom-infrastructure-deep-dive.md` | 143 | **Geoblocking confirmed.** Jio/Airtel block non-India IPs. Must host in India. Corporate postpaid for bulk SIMs. 850% RCS growth in 2024. |
 | `india-rcs-pricing-competitive-deep-dive.md` | 122 | PRP Services ₹0.12/msg cheapest CPaaS. SIM farm ₹0.046/msg at scale — 2-8x cheaper. |

@@ -62,12 +62,15 @@ An RCS messaging platform for India that sends messages at ₹0/message by using
 
 | Location | Jio ePDG | Airtel ePDG | Cost | Verdict |
 |----------|----------|-------------|------|---------|
-| AWS Mumbai (ap-south-1) | Should work (Indian IP) | Should work | ₹15K/mo | **USE THIS** |
-| GCP Mumbai (asia-south1) | Should work | Should work | ₹15K/mo | Fine |
-| Indian VPS (E2E, CtrlS) | Should work | Should work | ₹5-15K/mo | Cheapest |
-| US/EU cloud | BLOCKED | BLOCKED | N/A | Dead end |
+| AWS Mumbai (ap-south-1) | Should work (Indian IP) | Should work | ₹15K/mo | **Try first** |
+| Hostinger India VPS | Should work | Should work | ₹599/mo | **Cheapest** |
+| Indian mobile proxy (IPMunk) | **GUARANTEED** (real Jio IP) | Works | ₹2,250/mo ($27) | **Best if DC blocked** |
+| DIY proxy (friend's phone) | **GUARANTEED** (real Jio IP) | Works | ₹599/mo | **Long-term best** |
+| US/EU cloud | **BLOCKED** | **BLOCKED** | N/A | Dead end |
 
-**Jio and Airtel geoblock ePDG to Indian IPs only** (arXiv:2403.11759v1). Your server MUST be in India.
+**GEOBLOCKING CONFIRMED**: Tested from Singapore (161.118.236.42) — ALL 3 carriers (Jio, Airtel, Vi) timeout on UDP 500/4500. Zero responses. See `04-HARDWARE-INFRASTRUCTURE/test-epdg-reachability.py`.
+
+**Indian mobile proxies SOLVE the geoblocking problem**: IPMunk ($27/mo) and Coronium.io run real Jio/Airtel SIMs on phones in India and expose SOCKS5+UDP proxies. Your IKEv2 goes through their Jio 4G IP → ePDG sees a real subscriber. If Indian DC IPs also get blocked by carrier, mobile proxy is the guaranteed fallback. See `05-INDIA-OPERATIONS/indian-mobile-proxy-epdg-bypass.md`.
 
 ---
 
@@ -165,7 +168,8 @@ An RCS messaging platform for India that sends messages at ₹0/message by using
 
 | Unknown | Risk | How to Resolve |
 |---------|------|----------------|
-| Does Jio ePDG accept AWS Mumbai IP? | **HIGH** — if blocked, entire approach fails | Run epdg_discoverer from AWS ap-south-1 |
+| Does Jio ePDG accept AWS Mumbai IP? | **HIGH** — if blocked, entire approach fails | Run test-epdg-reachability.py from AWS Mumbai or Hostinger India VPS |
+| Does Jio ePDG accept Indian DC IPs? | **MEDIUM** — some carriers block DC ranges | If blocked, use IPMunk mobile proxy ($27/mo) for real Jio IP |
 | Does SIP REGISTER work on Jio IMS? | **HIGH** — only proven on T-Mobile | Test after ePDG tunnel established |
 | Does SIP MESSAGE delivery work on Jio? | **MEDIUM** | Send a message to a real RCS user |
 | Safe daily message rate on Jio? | **MEDIUM** | Start at 10/day/SIM, increase gradually |
@@ -187,14 +191,14 @@ An RCS messaging platform for India that sends messages at ₹0/message by using
 |------|--------|------|
 | 1 | Buy 1× Jio prepaid SIM | ₹1,499 |
 | 2 | Buy 1× USB CCID reader (any) | ₹500 |
-| 3 | Spin up AWS Mumbai instance | ₹0 (free tier) |
-| 4 | Install strongSwan + sim-rest-server | ₹0 |
-| 5 | Run epdg_discoverer against Jio ePDG | ₹0 |
-| 6 | Attempt IKEv2/EAP-AKA to Jio ePDG | ₹0 |
+| 3 | Spin up Hostinger India VPS (₹599/mo) or AWS Mumbai | ₹0-599 |
+| 4 | Install strongSwan + sim-rest-server on VPS | ₹0 |
+| 5 | Run test-epdg-reachability.py from VPS against Jio ePDG | ₹0 |
+| 6 | If ePDG reachable: attempt IKEv2/EAP-AKA | ₹0 |
 | 7 | If tunnel established: attempt SIP REGISTER | ₹0 |
 | 8 | If registered: send 1 SIP MESSAGE | ₹0 |
 
-**If Step 5 fails (ePDG blocks AWS IP): try Indian VPS or residential Indian IP.**
+**If Step 5 fails (Indian DC IP also blocked): subscribe to IPMunk mobile proxy ($27/mo), re-test.**
 **If Step 6 fails (EAP-AKA rejected): check SIM compatibility, try Airtel.**
 **If Step 7 fails (SIP REGISTER rejected): check P-CSCF, try different SIP stack.**
 **If Step 8 fails (message not delivered): check Jio RCS server, try SMSoIP format.**
