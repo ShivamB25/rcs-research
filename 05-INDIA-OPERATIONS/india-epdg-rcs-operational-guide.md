@@ -26,15 +26,30 @@
 
 ## 3. Does the ePDG Path Work from India?
 
-**YES - and it's actually BETTER from India than US because:**
+**YES - but ONLY from Indian IPs. Geoblocking is CONFIRMED.**
 
-1. **Jio ePDG works from abroad**: Jio explicitly supports "International Wi-Fi Calling" — calls from anywhere in the world over WiFi at ₹1/min to India. This means Jio's ePDG **accepts connections from non-Indian IPs**.
+### GEOBLOCKING CONFIRMED (May 17 2026)
 
-2. **Jio even added free incoming SMS over VoWiFi** (March 2026) for international travelers — meaning SMSoIP works through the ePDG tunnel.
+Tested from Singapore (IP: 161.118.236.42, Oracle Cloud) — ALL 3 carriers timeout on IKEv2 UDP 500/4500:
+- Jio (49.44.190.248, 49.44.190.243): TIMEOUT on both ports
+- Airtel (106.201.214.127, 106.201.214.99, 106.201.214.117): TIMEOUT on both ports
+- Vi (106.201.214.113): TIMEOUT on both ports
 
-3. **Airtel VoWiFi works internationally**: Multiple Reddit users confirm Airtel VoWiFi works from US/UK/EU.
+See `test-epdg-reachability.py` in `04-HARDWARE-INFRASTRUCTURE/` to test from your own IP.
 
-4. **No geoblocking (likely)**: India's ePDG servers are designed for NRI/international use. Unlike T-Mobile US which geoblocks ~40% of IPs, Indian carriers are LESS restrictive because Indian diaspora worldwide need VoWiFi.
+This contradicts earlier claims that Jio "International Wi-Fi Calling" means no geoblocking. The VoWiFi service works for phones roaming internationally because the phone's IMSI is registered on Jio's HSS — but the ePDG itself still geoblocks by source IP. Phones on international WiFi connect through their local carrier's ePDG or use DNS-based FQDN routing that we can't replicate headlessly.
+
+### Solutions for Geoblocking (3-layer fallback)
+
+| Layer | Approach | Cost | Trust Level | When to Use |
+|-------|----------|------|-------------|-------------|
+| 1 | Indian VPS (Hostinger/AWS Mumbai) | ₹599-1,500/mo | Datacenter IP | Try first |
+| 2 | Indian mobile proxy (IPMunk $27/mo) | ₹2,250/mo | Real Jio 4G IP | If DC IP blocked |
+| 3 | DIY proxy (friend's phone in India) | ₹599/mo | Real Jio mobile IP | Maximum stealth |
+
+See `indian-mobile-proxy-epdg-bypass.md` for full details.
+
+**libreswan 4.0+ supports RFC 8229 (IKE over TCP)** — if your proxy only supports SOCKS5 (TCP), encapsulate IKE+ESP inside TCP and route through proxy. strongSwan does NOT support RFC 8229.
 
 ## 4. SIM Registration & Token Expiry
 
@@ -164,7 +179,7 @@ With a **sysmoOCTSIM 8-slot reader** (€200 each):
 
 ## 9. India-Specific Advantages
 
-1. **Jio ePDG doesn't geoblock** (designed for NRI use)
+1. **GEOBLOCKING CONFIRMED** — all carriers block non-India IPs (tested May 2026). Must use Indian IP (VPS or mobile proxy).
 2. **All carriers support RCS** (Jio self-hosted, Airtel/Vi via Google Jibe)
 3. **SIMs are extremely cheap** (₹1,499/year = $18/year)
 4. **VoWiFi is well-supported** (Jio even has free incoming SMS over VoWiFi)
@@ -179,5 +194,6 @@ With a **sysmoOCTSIM 8-slot reader** (€200 each):
 3. **TRAI spam regulations** — promotional messages need DLT template approval
 4. **Jio may detect unusual traffic patterns** (100 SIMs from same data center)
 5. **EAP-AKA from server** may trigger fraud detection if no real phone is associated
+6. **Indian DC IPs may also be blocked** by carrier (unproven — need to test from India)
 
-**Mitigation**: Use multiple Aadhaar IDs (family members, employees) for SIM registration. Keep message volume per SIM below 50/day. Use India-based VPS for ePDG connection.
+**Mitigation**: Use multiple Aadhaar IDs (family members, employees) for SIM registration. Keep message volume per SIM below 50/day. Use India-based VPS for ePDG connection. If DC IP blocked, use Indian mobile proxy (IPMunk $27/mo) for real carrier IP.

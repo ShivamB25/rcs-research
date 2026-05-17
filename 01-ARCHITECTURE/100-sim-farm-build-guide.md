@@ -253,8 +253,10 @@ for slot in range(104):
 
 ## 10. India-Specific Notes
 
-- **Server MUST be in India** — Jio/Airtel geoblock ePDG (arXiv:2403.11759v1)
+- **Server MUST be in India** — Jio/Airtel/Vi geoblock ePDG (CONFIRMED May 2026, tested from Singapore)
+- **If Indian DC IP also blocked** — use Indian mobile proxy (IPMunk $27/mo, real Jio 4G IP). See `05-INDIA-OPERATIONS/indian-mobile-proxy-epdg-bypass.md`
 - **9 SIM/person limit** — use corporate postpaid (no limit) or 12× KYC identities
+- **Corporate postpaid kills economics** — ₹499/mo/SIM = ₹5,988/yr (4.8x more than prepaid ₹1,499/yr). Use hybrid: 20 corp + 80 prepaid
 - **DLT registration** — mandatory for business messaging
 - **Airtel AI spam detection** active since Sept 2024
 - **TRAI Feb 2025** mandates SIM farm detection for all carriers

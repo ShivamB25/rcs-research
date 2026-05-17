@@ -36,7 +36,7 @@
 | Anti-spam | Built-in (RBM compliance) | Must manage carefully |
 
 ### 1.4 Key Insight
-**Smobi proves the RCS business messaging market is YC-viable.** But Smobi pays 10-20x more per message than a SIM farm. If you can solve the legal/scaling problems, your cost advantage is massive.
+**Smobi proves the RCS business messaging market is YC-viable.** Smobi pays significantly more per message than a SIM farm. However, the SIM farm cost advantage is 1.3-2x (not 10-20x) at realistic message volumes. The real differentiator is P2P appearance (higher open rates, no brand registration), not raw cost.
 
 ---
 
@@ -91,21 +91,24 @@ From Jio's blog: "In 2024, RCS interactions in India surged by a massive 850%. B
 | Smobi (YC) | CPaaS Vonage | ₹0.50-1.00 | Unlimited | AI agents, no-code |
 | JioCX | Carrier CPaaS | Custom | Unlimited | Jio ecosystem |
 | Route Mobile | CPaaS RBM | ₹0.16-0.27 | Unlimited | Enterprise sales |
-| **Your SIM Farm** | **Carrier IMS** | **₹0.046** | **600K/mo (100 SIMs)** | **Cost, P2P appearance** |
+| **Your SIM Farm** | **Carrier IMS** | **₹0.046-0.092** | **600K/mo (100 SIMs)** | **Cost, P2P appearance** |
+
+> **Note (May 2026)**: The ₹0.046/msg figure assumes 200 msg/day/SIM which risks carrier detection. At realistic 100 msg/day/SIM, cost is ₹0.092/msg — still 1.3-2x cheaper than PRP (₹0.12) and 2-7x cheaper than Gupshup (₹0.18-0.65). The advantage is real but smaller than the "10-20x" initially claimed. See `00-MASTER/CROSS-COMPARISON-DEFINITIVE.md` for full cost model.
 
 ### 4.2 Your Unique Value Proposition
-1. **10-20x cheaper** than any CPaaS provider
+1. **1.3-2x cheaper** than cheapest CPaaS (PRP ₹0.12), **2-7x cheaper** than Gupshup
 2. Messages appear as **P2P (person-to-person)**, not A2P → higher open rates
 3. No brand verification needed → faster onboarding
 4. Can send from **real Indian mobile numbers** → better deliverability
 5. **Anti-spam advantage**: CPaaS RBM messages get filtered; P2P RCS doesn't
 
 ### 4.3 Your Risks
-1. **Illegal** (SIM farm without proper KYC) - unless corporate postpaid
+1. **Illegal at scale** (SIM farm without proper KYC) - unless corporate postpaid (₹499/mo/SIM kills economics)
 2. **Limited scale** - 100 SIMs = 300K-600K msg/mo max
 3. **No rich media** initially (SIP MESSAGE = text only)
 4. **Carrier detection** - Airtel AI, TRAI mandates
 5. **Single point of failure** - ePDG/IPsec/SIM management is complex
+6. **Geoblocking** - all Indian carriers block ePDG from non-India IPs (confirmed May 2026). Must use Indian VPS or mobile proxy.
 
 ### 4.4 Recommended Positioning
 **"India's cheapest RCS messaging API at ₹0.05/message"**
@@ -120,10 +123,11 @@ Position as:
 
 ## 5. IMMEDIATE NEXT STEPS TO VALIDATE
 
-1. **Test ePDG connectivity from AWS Mumbai**
-   - Deploy Spinlogic/epdg_discoverer on AWS ap-south-1
+1. **Test ePDG connectivity from Indian IP**
+   - Deploy `test-epdg-reachability.py` (in `04-HARDWARE-INFRASTRUCTURE/`) on Indian VPS or AWS Mumbai
    - Run against Jio and Airtel ePDG domains
-   - Verify IKEv2 acceptance from Indian datacenter IP
+   - Verify IKEv2 acceptance from Indian IP
+   - If Indian DC IP blocked → subscribe to IPMunk mobile proxy ($27/mo) for real Jio 4G IP
 
 2. **Get 1 Jio SIM + 1 PCSC reader**
    - Buy 1 Jio prepaid SIM (₹1,499/yr)

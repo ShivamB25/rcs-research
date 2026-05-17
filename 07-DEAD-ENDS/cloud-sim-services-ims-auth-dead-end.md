@@ -1,6 +1,9 @@
 # Cloud SIM Services for IMS Authentication - Dead End Analysis
 
 **Source**: Firecrawl searches + research, 2026-05-16
+**Updated**: 2026-05-17
+
+> **Also dead**: 256-SIM banks (Dinstar SIMCloud, iQsim 256 Rack) connect SIMs to GSM modems (radio layer), NOT PCSC readers. They cannot perform EAP-AKA authentication needed for ePDG/IMS. They only do SMS/voice via the modem's AT command interface. For RCS you need APDU-level SIM access (PCSC) to compute AKA vectors.
 
 ---
 

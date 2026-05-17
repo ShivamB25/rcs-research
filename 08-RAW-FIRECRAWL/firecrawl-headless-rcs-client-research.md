@@ -2,6 +2,9 @@
 
 **Source**: Firecrawl Agent (019e3190-cd70-7688-8a6a-42f5d8e3b9f2)
 **Date**: 2026-05-16
+**Updated**: 2026-05-17 — added geoblocking confirmation, auth clarification, RFC 8229
+
+> **CRITICAL UPDATE (May 17 2026)**: ePDG geoblocking is CONFIRMED. All Indian carriers (Jio, Airtel, Vi) block IKEv2 from non-India IPs. Tested from Singapore — all timeout. Server MUST have Indian IP. See `test-epdg-reachability.py` and `indian-mobile-proxy-epdg-bypass.md`. Also: strongSwan eap-sim-pcsc does NOT support EAP-AKA (only EAP-SIM). Use sim-rest-server instead. For IKE over TCP through SOCKS5 proxies, use libreswan 4.0+ (RFC 8229) — strongSwan doesn't support it.
 
 ---
 

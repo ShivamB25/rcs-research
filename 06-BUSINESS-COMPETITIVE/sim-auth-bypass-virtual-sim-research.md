@@ -2,6 +2,9 @@
 
 **Source**: Firecrawl Agent (019e3190-cd82-71eb-99a7-1934e7295b7e)
 **Date**: 2026-05-16
+**Updated**: 2026-05-17
+
+> **Key update (May 2026)**: K/OPc extraction from carrier SIMs via DPA is technically possible but NOT scalable to 100 SIMs (10-80 min per SIM + equipment cost). The practical path remains: physical SIMs in PCSC readers (sysmoOCTSIM) with sim-rest-server as auth backend. Virtual SIM (software Milenage via CryptoMobile) works ONLY if you already have K+OPc values — you can't extract them from carrier SIMs without DPA. strongSwan eap-sim-pcsc does NOT support EAP-AKA (only EAP-SIM triplets) — confirmed by strongSwan developer Tobias Brunner (Issue #2316).
 
 ---
 

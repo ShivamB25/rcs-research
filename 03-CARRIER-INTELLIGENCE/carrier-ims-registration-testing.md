@@ -27,8 +27,8 @@
 
 **Key conclusions**:
 - **Path A (Direct SIP)**: Rejected by all carriers — P-CSCF validates source IP, requires IPSec SAs, and is not reachable from the public internet
-- **Path B (ePDG tunnel)**: Works for most carriers — the ePDG is publicly accessible, accepts connections from any IP, and provides a legitimate IMS access path identical to WiFi calling
-- **Geoblocking is the main variable**: Some carriers block IKEv2 from non-domestic IPs, but many do not
+- **Path B (ePDG tunnel)**: Works for most carriers — the ePDG is publicly accessible, accepts connections from domestic IPs, and provides a legitimate IMS access path identical to WiFi calling
+- **Geoblocking is CONFIRMED for India**: All 3 Indian carriers (Jio, Airtel, Vi) block ePDG from non-India IPs (tested May 2026). Server MUST be in India or use Indian mobile proxy.
 - **Physical SIM card is mandatory**: The EAP-AKA authentication requires the SIM's secret key K, which never leaves the SIM's secure element
 - **strongSwan + sim-rest-server + SIP stack is the proven stack**: Multiple open-source projects have demonstrated this architecture
 
@@ -346,8 +346,12 @@ Based on the research papers and community reports:
 | **EE UK** | No | No | None needed |
 | **Deutsche Telekom** | Likely no | No | None needed |
 | **Orange France** | Partially (some reports of blocking) | No | May need French VPN |
-| **Jio India** | Likely no | No | None needed |
+| **Jio India** | **YES (CONFIRMED May 2026)** | No | Indian VPS or mobile proxy (IPMunk $27/mo) |
+| **Airtel India** | **YES (CONFIRMED May 2026)** | No | Indian VPS or mobile proxy |
+| **Vi India** | **YES (CONFIRMED May 2026)** | No | Indian VPS or mobile proxy |
 | **Some Asian carriers** | Yes (confirmed in research) | Possible | VPN in home country |
+
+> **UPDATE (May 17 2026)**: Indian carrier geoblocking is now CONFIRMED by live testing. All 3 Indian carriers (Jio, Airtel, Vi) timeout on IKEv2 from Singapore IP 161.118.236.42. The earlier "Likely no" for Jio was WRONG. Jio's "International Wi-Fi Calling" feature works for physical phones because the phone's IMSI is already known to the HSS, but headless ePDG connections are still geoblocked by source IP. See `04-HARDWARE-INFRASTRUCTURE/test-epdg-reachability.py` and `05-INDIA-OPERATIONS/indian-mobile-proxy-epdg-bypass.md`.
 
 ---
 

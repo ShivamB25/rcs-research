@@ -2,10 +2,13 @@
 
 **Source**: Firecrawl Agent (019e3190-cf29-778d-b158-0fd0dc911307)
 **Date**: 2026-05-16
+**Updated**: 2026-05-17 — geoblocking CONFIRMED by live test
+
+> **CONFIRMED (May 17 2026)**: Live IKEv2 test from Singapore (IP 161.118.236.42) — ALL 3 carriers timeout on UDP 500/4500. Jio (49.44.190.248/.243), Airtel (106.201.214.127/.99/.117), Vi (106.201.214.113). Server MUST have Indian IP. See `test-epdg-reachability.py` and `indian-mobile-proxy-epdg-bypass.md`.
 
 ---
 
-## 1. CRITICAL FINDING: Jio & Airtel Geoblock ePDG
+## 1. CRITICAL FINDING: ALL Indian Carriers Geoblock ePDG (CONFIRMED)
 
 ### 1.1 Jio ePDG Geoblocking
 - **International IPs**: BLOCKED at IKE layer

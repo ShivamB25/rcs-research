@@ -122,10 +122,13 @@ Raw agent outputs from Firecrawl deep research.
 | Metric | Value |
 |--------|-------|
 | Cost per RCS message (SIM farm, 200 msg/day/SIM, Year 2+) | **₹0.046** |
+| Cost per RCS message (SIM farm, 100 msg/day/SIM, Year 2+) | **₹0.092** |
 | Cost per RCS message (cheapest CPaaS: PRP Services) | ₹0.12 |
 | Cost per RCS message (Gupshup) | ₹0.35 |
 | Cost per RCS message (Smobi/YC via Vonage) | ₹0.50-1.00 |
-| **SIM farm advantage** | **2.6-20x cheaper** |
+| **SIM farm advantage (realistic 100 msg/day)** | **1.3-2x cheaper** |
+| **SIM farm advantage (aggressive 200 msg/day)** | **2.6-7x cheaper** |
+| ePDG geoblocking | **CONFIRMED** (all 3 Indian carriers, tested May 2026) |
 | India RCS growth (2024) | 850% |
 | India RCS-enabled users | 200M+ |
 | India A2P RCS messages (2029 projected) | 21 billion |
@@ -159,8 +162,11 @@ SIM Cards (Jio/Airtel) → sysmoOCTSIM (13 boards, 104 slots)
 6. **Jibe OTT is DEAD** — Google shut it down Aug 2025. Carrier IMS is the only path.
 7. **Direct SIP to P-CSCF doesn't work** — must go through ePDG IPsec tunnel.
 8. **K/OPc cannot be extracted from carrier SIMs** — you need the physical SIM for auth.
-9. **Jio/Airtel geoblock ePDG** — your server must have an Indian IP address.
-10. **9 SIM/person limit in India** — corporate postpaid is the legal path for bulk SIMs.
+9. **ALL Indian carriers geoblock ePDG (CONFIRMED)** — tested May 2026. Jio, Airtel, Vi all timeout from non-India IPs. Server must have Indian IP (VPS or mobile proxy).
+10. **9 SIM/person limit in India** — corporate postpaid (₹499/mo) is the legal path but kills economics. Hybrid: 20 corp + 80 prepaid.
+11. **Cost advantage is 1.3-2x at realistic volumes** — NOT 10-20x. Break-even at ~60 msg/day/SIM.
+12. **256-SIM banks (Dinstar/iQsim) cannot do RCS** — they connect SIMs to GSM modems, not PCSC. Can't do EAP-AKA.
+13. **libreswan supports RFC 8229 (IKE over TCP)** — strongSwan doesn't. Use libreswan if you need to route IKEv2 through SOCKS5 proxy.
 
 ---
 
@@ -172,8 +178,9 @@ SIM Cards (Jio/Airtel) → sysmoOCTSIM (13 boards, 104 slots)
 - **Phase 4**: India-specific deep research (ePDG addresses, Jio/Airtel VoWiFi, SIM costs, DLT regulations)
 - **Phase 5**: 3 Firecrawl agents + 15+ parallel searches (headless RCS client, India telecom, SIM auth bypass)
 - **Phase 6**: Hardware deep dives (sysmoOCTSIM vs consumer CCID readers, both with dedicated worker agents using sequential thinking + Context7)
+- **Phase 7**: Cross-comparison synthesis + Indian mobile proxy research + ePDG reachability test (CONFIRMED geoblocking)
 
-**Total**: 39 reports, ~25,000 lines, ~1.4MB of research.
+**Total**: 42+ files, ~28,000 lines, organized in 8-folder structure.
 
 ---
 
