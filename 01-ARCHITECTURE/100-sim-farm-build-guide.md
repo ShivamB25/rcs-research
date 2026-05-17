@@ -1,52 +1,275 @@
 # 100-SIM RCS Management Farm: Practical Build Guide
 
-**Date:** 2026-05-16  
-**Scope:** Detailed operational guide for building a 100-SIM RCS management farm — exact hardware, software, wiring, costs, and step-by-step setup instructions. This is the "just do it" guide.  
+**Date:** 2026-05-17 (v2 — updated after hardware deep dives)  
+**Scope:** Detailed operational guide for building a 100-SIM RCS messaging farm using sysmoOCTSIM + ePDG + SIP. This is the "just do it" guide.  
 **Audience:** Engineers who want to build and operate the system.  
-**Legal Disclaimer:** SIM farms operate in a legal gray area in most jurisdictions. The UK explicitly criminalized them in 2025. This guide is for research and educational purposes. Consult legal counsel before deploying.
+**Legal Disclaimer:** SIM farms operate in a legal gray area in most jurisdictions. The UK explicitly criminalized them in 2025. India enforces 9-SIM/person limits with ₹50K-2L fines. This guide is for research and educational purposes only.
+
+---
+
+## DECISION: Approach A — ePDG + SIM + SIP
+
+After exhaustive hardware research (see `04-HARDWARE-INFRASTRUCTURE/sysmoOCTSIM-deep-dive.md` and `04-HARDWARE-INFRASTRUCTURE/consumer-ccid-readers-deep-dive.md`), **Approach A is the only viable path.** Approaches B and C are deprecated.
+
+| Approach | Verdict | Why |
+|----------|---------|-----|
+| **A: ePDG + SIM + SIP (CHOSEN)** | **BUILD THIS** | Cheapest (₹0/msg), highest throughput, no phones needed. sysmoOCTSIM hardware proven. Osmocom guide proves ePDG path works on real carriers. |
+| B: Android Phone Farm | **DEPRECATED** | ₹30-50/phone, 85-90% uptime, ADB UI automation is fragile, 2-5 sec/msg. Dead end for scale. |
+| C: Hybrid (phones + server) | **DEPRECATED** | Still needs 100 phones. Adds server complexity without eliminating phone fragility. Worst of both worlds. |
+
+**The rest of this guide is rewritten to focus exclusively on Approach A with corrected hardware costs.**
 
 ---
 
 ## Table of Contents
 
-1. [Three Approaches Overview](#1-three-approaches-overview)
-2. [Approach A: Headless SIP+SIM Farm](#2-approach-a-headless-sipsim-farm-most-aggressive)
-3. [Approach B: Android Phone Farm](#3-approach-b-android-phone-farm-most-practical)
-4. [Approach C: Hybrid Architecture (RECOMMENDED)](#4-approach-c-hybrid-architecture-recommended)
-5. [DETAILED BUILD: Approach C — Step by Step](#5-detailed-build-approach-c--step-by-step)
+1. [Architecture Overview](#1-architecture-overview)
+2. [Hardware Bill of Materials](#2-hardware-bill-of-materials)
+3. [USB Topology & Wiring](#3-usb-topology--wiring)
+4. [Software Stack](#4-software-stack)
+5. [Step-by-Step Build](#5-step-by-step-build)
 6. [Cost Breakdown](#6-cost-breakdown)
 7. [Expected Throughput](#7-expected-throughput)
 8. [Failure Modes and Recovery](#8-failure-modes-and-recovery)
-9. [Monitoring Dashboard](#9-monitoring-dashboard)
-10. [Security and Operational Security](#10-security-and-operational-security)
+9. [Monitoring](#9-monitoring)
+10. [India-Specific Notes](#10-india-specific-notes)
 11. [Appendix: Configuration Files](#11-appendix-configuration-files)
 
 ---
 
 ## 1. Three Approaches Overview
 
-| Factor | A: Headless SIP+SIM | B: Android Phone Farm | C: Hybrid (Recommended) |
-|--------|--------------------|-----------------------|------------------------|
-| **RCS type** | P2P via SIP/IMS protocol | P2P via Google Messages UI | P2P via phones + server routing |
-| **Hardware cost (100 SIMs)** | $3,500–5,000 | $5,000–8,000 | $5,500–9,000 |
-| **Monthly operating cost** | $300–1,500 | $1,000–3,000 | $1,000–2,500 |
-| **Development effort** | 6–12 months | 2–4 months | 3–6 months |
-| **Reliability** | Low–Medium (carrier-specific) | Medium (85–95% uptime/phone) | Medium–High (phones + fallback) |
-| **Throughput** | High (protocol-level) | Low (2–5 sec/msg UI-limited) | Medium (phones bottleneck) |
-| **Legal risk** | High (SIM bank + carrier IMS) | Medium (ToS concerns) | Medium |
-| **SMS capability** | Via modem pool | Via phone | Via modem pool + phone |
-| **Setup complexity** | Very High | Medium | Medium–High |
+---
 
-### Why Approach C (Hybrid) Is Recommended
+## 1. Architecture Overview
 
-- **Phones handle RCS registration**: The hardest part of RCS is staying registered. Google Messages on a real Android phone with a real SIM is the ONLY reliable way to maintain RCS registration. Headless SIP/IMS clients break constantly due to carrier-specific IMS configurations, SQN sync failures, IPSec requirements, and Play Integrity checks.
-- **Server handles routing and API**: A central server provides the API layer, message queuing, persistence, and multi-tenant management that phones alone can't provide.
-- **Modem pool for SMS fallback**: When RCS fails or the recipient doesn't support RCS, fall back to SMS via a dedicated modem pool (much cheaper than using phone SMS).
-- **Scalable architecture**: Add or remove phone "modems" without touching the API or routing layer.
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│              100-SIM RCS FARM — APPROVED ARCHITECTURE               │
+│                                                                     │
+│  ┌──────────────┐   ┌──────────────┐   ┌───────────────┐          │
+│  │ 13× sysmoOCT │──→│ sim-rest-    │──→│ strongSwan    │──┐       │
+│  │ SIM boards   │   │ server.py   │   │ (Osmocom fork)│  │       │
+│  │ (104 slots)  │   │              │   │               │  │ IKEv2  │
+│  │              │   │ RAND/AUTN    │   │ EAP-AKA via   │  │ EAP-AKA│
+│  │ SIM #1-104   │   │    ↓         │   │ sim-rest-server│  │       │
+│  │ in reader    │   │ RES/CK/IK   │   │               │──┤       │
+│  └──────────────┘   │ AKA-Digest │   │ IPsec tunnel  │  │       │
+│                      │ computation│   │ established   │  │       │
+│                      └──────────────┘   └───────────────┘  │       │
+│                                                        ▼       │
+│                                           ┌──────────────────┐  │
+│                                           │   Carrier ePDG   │  │
+│                                           │  (Jio/Airtel)    │  │
+│                                           └────────┬─────────┘  │
+│                                                    │             │
+│                                           ┌────────▼─────────┐  │
+│                                           │  PGW → P-CSCF    │  │
+│                                           │  (carrier IMS)   │  │
+│                                           └────────┬─────────┘  │
+│  ┌──────────────────┐                              │            │
+│  │ SIP Stack        │─── SIP REGISTER (AKA) ────→│            │
+│  │ (pjsip/custom)  │                              │            │
+│  │                  │←── 200 OK ─────────────────│            │
+│  │ 1. REGISTER→401  │─── SIP MESSAGE ───────────→│──→ S-CSCF  │
+│  │ 2. → SIM auth   │                              │    +RCS AS │
+│  │ 3. → AKA-Digest │                              │            │
+│  │ 4. REGISTER→200 │                              │            │
+│  │ 5. MESSAGE/INVITE│                              │            │
+│  └──────────────────┘                              │            │
+│                                                     ▼            │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ Orchestration Layer (Python FastAPI)                    │   │
+│  │ - SIM slot management  - Message queue   - REST API    │   │
+│  │ - Registration monitor - Health checks   - Rate limit   │   │
+│  │ - ePDG tunnel manager - Auto-recovery    - Monitoring   │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key constraints discovered during research:**
+- Server MUST be in India (Jio/Airtel geoblock ePDG to non-India IPs)
+- pcscd MUST be recompiled (default 16-reader limit → change to 128)
+- strongSwan eap-sim-pcsc does NOT support EAP-AKA → use sim-rest-server instead
+- libccid serializes multi-slot access (8 slots per board are sequential, not concurrent — fine for RCS)
+- SIMs must stay in readers 24/7 (EAP-AKA re-auth every ~24h, SIP re-REGISTER every ~3.5 days)
 
 ---
 
-## 2. Approach A: Headless SIP+SIM Farm (Most Aggressive)
+## 2. Hardware Bill of Materials
+
+| Item | Product | Qty | Unit Cost | Total | Notes |
+|------|---------|-----|----------|-------|-------|
+| **SIM Reader** | sysmoOCTSIM (8-slot PCBA) | 13 | €100-150 (vol.) | €1,300-1,950 | Contact sales@sysmocom.de for volume quote |
+| **Power Supplies** | 5V/1A barrel jack | 13 | €10 | €130 | Mandatory — USB bus power insufficient |
+| **USB Hubs** | Powered 7-port USB 2.0 | 3 | €20 | €60 | Proven in sysmoSIMBANK-96 design |
+| **USB Cables** | USB 2.0 A-to-Mini-B | 13 | €3 | €39 | |
+| **Carrier SIMs** | Jio Prepaid (₹1,499/yr) | 100 | ₹1,499 | ₹1,49,900/yr | 9/person limit → corporate postpaid or 12 KYC identities |
+| **Server** | Dell R730 / used 2U | 1 | ₹25,000 | ₹25,000 | 8GB RAM, USB 3.0 PCIe card, India hosting |
+| **India hosting** | AWS Mumbai m5.xlarge | 1 | ₹15,000/mo | ₹1,80,000/yr | Indian IP required for ePDG |
+| **Total Year 1** | | | | **₹3,79,900** | With consumer CCID readers: ₹3,07,400 cheaper on hardware but ₹72,500 more on infrastructure |
+| **Total Year 2+** | | | | **₹3,29,900/yr** | Only SIM renewals + hosting |
+
+---
+
+## 3. USB Topology & Wiring
+
+```
+Server (x86_64 Linux, USB 3.0 PCIe card)
+  └── Powered USB 3.0 Hub (7-port)
+        ├── USB 2.0 Hub #1 (4-port)
+        │     ├── Board 0 (slots 0-7)
+        │     ├── Board 1 (slots 8-15)
+        │     ├── Board 2 (slots 16-23)
+        │     └── Board 3 (slots 24-31)
+        ├── USB 2.0 Hub #2 (4-port)
+        │     ├── Board 4 (slots 32-39)
+        │     ├── Board 5 (slots 40-47)
+        │     ├── Board 6 (slots 48-55)
+        │     └── Board 7 (slots 56-63)
+        ├── USB 2.0 Hub #3 (4-port)
+        │     ├── Board 8 (slots 64-71)
+        │     ├── Board 9 (slots 72-79)
+        │     ├── Board 10 (slots 80-87)
+        │     └── Board 11 (slots 88-95)
+        └── Board 12 (slots 96-103) [direct]
+```
+
+**One USB controller is enough** — 13 boards = 39 endpoints. Intel XHCI supports 96.
+
+**sysmoOCTSIM slot naming**: `sysmocom sysmoOCTSIM [CCID] (SERIAL) DD SS` where DD=device index, SS=slot index (00-07). Deterministic across reboots.
+
+---
+
+## 4. Software Stack
+
+| Layer | Component | Purpose |
+|-------|-----------|---------|
+| **SIM Auth** | sim-rest-server (pySim) | REST API for AKA: `POST /sim-auth-api/v1/slot/{0..103}` |
+| **ePDG Tunnel** | strongSwan (Osmocom fork) | IKEv2/EAP-AKA to carrier ePDG |
+| **IMS Client** | PJSIP / custom SIP | SIP REGISTER + SIP MESSAGE |
+| **Orchestration** | Python FastAPI | SIM management, message queue, health checks |
+| **PCSC** | pcsc-lite + libccid (recompiled) | Smart card reader interface (MAX_READERS=128) |
+| **Monitoring** | Prometheus + Grafana | Per-slot health, registration status, message throughput |
+
+**Critical**: strongSwan's `eap-sim-pcsc` plugin only supports EAP-SIM (triplets), NOT EAP-AKA (quintuplets). Use sim-rest-server as the auth backend instead.
+
+---
+
+## 5. Step-by-Step Build
+
+### Week 1-2: Hardware Setup
+1. Order 13× sysmoOCTSIM from sysmocom (contact sales@sysmocom.de)
+2. Provision 100× Jio prepaid SIMs (corporate postpaid or 12× KYC identities)
+3. Set up server: Debian 12, 8GB RAM, USB 3.0 PCIe card
+4. Recompile pcsc-lite: `PCSCLITE_MAX_READERS_CONTEXTS=128`
+5. Recompile libccid: `CCID_DRIVER_MAX_READERS=128`
+6. Add VID/PID 0x1D50:0x6141 to `/etc/libccid_Info.plist`
+7. Connect boards via USB hubs, power each with 5V/1A supply
+8. Verify: `pcsc_scan` should show 104 reader slots
+
+### Week 3-4: ePDG + Auth Stack
+9. Install sim-rest-server from pySim
+10. Install strongSwan (Osmocom fork: `gitea.osmocom.org/ims-volte-vowifi/strongswan-epdg`)
+11. Configure strongSwan for EAP-AKA with sim-rest-server backend
+12. Test ePDG connection to Jio/Airtel from Indian IP
+13. Verify IKEv2 tunnel establishment with 1 SIM
+
+### Week 5-8: IMS + RCS
+14. Install PJSIP or custom SIP stack
+15. Implement SIP REGISTER flow with AKA-Digest (see headless-rcs-recipe.md)
+16. Test SIP REGISTER → 401 → SIM auth → 200 OK with 1 SIM
+17. Send first SIP MESSAGE between two RCS users
+18. Scale to 8 SIMs (1 board), then 104 SIMs (13 boards)
+
+### Week 9-12: Orchestration + Production
+19. Build FastAPI orchestration layer
+20. Implement message queue (NATS/Redis)
+21. Add health monitoring per slot
+22. Implement auto-recovery (tunnel restart, re-registration)
+23. Add rate limiting (≤50 msg/day/SIM for safety)
+24. Deploy on AWS Mumbai with monitoring
+
+---
+
+## 6. Cost Breakdown
+
+| Cost Item | Year 1 | Year 2+ |
+|-----------|--------|---------|
+| 13× sysmoOCTSIM (one-time) | ₹1,20,000-1,80,000 | ₹0 |
+| 100× Jio Prepaid SIMs | ₹1,49,900 | ₹1,49,900 |
+| AWS Mumbai server | ₹1,80,000 | ₹1,80,000 |
+| Power supplies + cables + hubs | ₹15,000 | ₹0 |
+| **Total** | **₹4,64,900-5,24,900** | **₹3,29,900** |
+
+**Cost per message at 200 msg/day/SIM (600K msg/mo):**
+- Year 1: ₹0.065-0.073/msg
+- Year 2: ₹0.046/msg
+- vs CPaaS cheapest (PRP ₹0.12): **1.7-2.6x cheaper**
+- vs CPaaS mid-range (Gupshup ₹0.18): **2.5-3.9x cheaper**
+
+---
+
+## 7. Expected Throughput
+
+| Metric | Value |
+|--------|-------|
+| SIMs | 100 |
+| Messages/day/SIM (safe) | 50-100 |
+| Messages/month | 150,000-300,000 |
+| RCS text (SIP MESSAGE) | ~500 bytes, <1 sec delivery |
+| IMS re-registration | Every 3.5 days (600,000s / 2) |
+| EAP-AKA re-auth | Every ~24 hours |
+| Simultaneous tunnels | 100 (one per SIM) |
+
+---
+
+## 8. Failure Modes and Recovery
+
+| Failure | Detection | Recovery |
+|---------|-----------|----------|
+| SIM contact lost | pcscd reports "Card removed" | Power-cycle board, reseat SIM |
+| IPsec tunnel drops | strongSwan DPD timeout | strongSwan auto-reconnect |
+| SIP registration expired | No 200 OK before expiry | Auto re-REGISTER at 3.5 days |
+| EAP-AKA SQN desync | AUTS returned by SIM | sim-rest-server handles resync |
+| ePDG unreachable | IKEv2 timeout | Retry with backoff, check Indian IP |
+| Carrier blocks IMSI | 403 Forbidden | Rotate to different SIM, reduce volume |
+| pcscd crash | Health check fails | `systemctl restart pcscd` |
+
+---
+
+## 9. Monitoring
+
+Monitor per-slot via sim-rest-server health checks:
+```python
+for slot in range(104):
+    resp = requests.post(f"http://localhost:8000/sim-auth-api/v1/slot/{slot}",
+                         json={"rand": "00"*16, "autn": "00"*16})
+    status = "OK" if resp.status_code == 200 else "FAIL"
+    # Push to Prometheus
+```
+
+---
+
+## 10. India-Specific Notes
+
+- **Server MUST be in India** — Jio/Airtel geoblock ePDG (arXiv:2403.11759v1)
+- **9 SIM/person limit** — use corporate postpaid (no limit) or 12× KYC identities
+- **DLT registration** — mandatory for business messaging
+- **Airtel AI spam detection** active since Sept 2024
+- **TRAI Feb 2025** mandates SIM farm detection for all carriers
+- **RCS over IMS is free** — you only pay for the SIM identity, not per message
+- **Corporate postpaid** from Jio: ₹499/mo/SIM (5x more expensive than prepaid ₹125/mo)
+
+---
+
+## ARCHIVED: Original Three Approaches (Pre-Hardware-Research)
+
+> **NOTE**: The sections below are the original pre-research comparison. Approaches B and C are now deprecated. The approved approach is A (ePDG+SIM+SIP with sysmoOCTSIM) as documented above.
+
+---
+
+## ~~1. Three Approaches Overview~~ (ARCHIVED)
 
 ### 2.1 Architecture Overview
 

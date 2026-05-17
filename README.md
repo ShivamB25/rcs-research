@@ -10,8 +10,8 @@ Complete research dump for building a carrier-IMS-based RCS messaging system usi
 
 Read these first, in order:
 
-1. [`00-MASTER/MEGA-PROMPT-v2.md`](00-MASTER/MEGA-PROMPT-v2.md) — The self-contained build prompt. Everything you need in one file.
-2. [`00-MASTER/firecrawl-aggressive-research-summary.md`](00-MASTER/firecrawl-aggressive-research-summary.md) — Latest findings not yet in the mega prompt.
+1. [`00-MASTER/CROSS-COMPARISON-DEFINITIVE.md`](00-MASTER/CROSS-COMPARISON-DEFINITIVE.md) — **Start here.** Everything from the entire research synthesized into one cross-comparison. What works, what doesn't, costs, risks, the build plan.
+2. [`00-MASTER/MEGA-PROMPT-v2.md`](00-MASTER/MEGA-PROMPT-v2.md) — The self-contained build prompt. 6 architecture paths, full technical reference, starter code, carrier data.
 3. [`04-HARDWARE-INFRASTRUCTURE/sysmoOCTSIM-deep-dive.md`](04-HARDWARE-INFRASTRUCTURE/sysmoOCTSIM-deep-dive.md) — Hardware decision: why sysmoOCTSIM beats consumer readers.
 
 ---
@@ -23,6 +23,7 @@ The executive files. Start here.
 
 | File | Lines | What It Is |
 |------|-------|------------|
+| `CROSS-COMPARISON-DEFINITIVE.md` | 280 | **THE master document.** All research synthesized. Paths, costs, risks, build plan. |
 | `MEGA-PROMPT-v2.md` | 1,458 | Self-contained build prompt. 6 architecture paths, full technical reference, starter code, carrier data, business model. |
 | `firecrawl-aggressive-research-summary.md` | 180 | Latest Firecrawl findings: geoblocking, proven implementations, cost models, market intel. |
 
