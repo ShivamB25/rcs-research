@@ -115,6 +115,13 @@ Raw agent outputs from Firecrawl deep research.
 |------|-------|--------|
 | `firecrawl-headless-rcs-client-research.md` | 134 | Agent 1: Proven implementations (Osmocom VoWiFi, strongSwan-ePDG, SWu-IKEv2, CryptoMobile). |
 
+### `09-VALIDATION/`
+Phase 0 validation — prove it works for ₹3,128 before building the farm.
+
+| File | Lines | What It Is |
+|------|-------|------------|
+| `phase0-validation-guide.md` | 590 | **DO THIS FIRST.** 1× ACR39U (₹980) + 1× Jio SIM → sim-rest-server → strongSwan → ePDG → IMS → 1 message. Full step-by-step. Osmocom compatibility proof included. |
+
 ---
 
 ## Key Numbers
